@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  displayName  String?  @map("display_name")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  avatarUrl    String?  @map("avatar_url")
+  roles        String   @default("searcher") // カンマ区切り: "walker,searcher"
+  bio          String?  @db.Text
+  points       Int      @default(0)
+  totalEarned  Int      @default(0) @map("total_earned")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  outfits       Outfit[]
+  interactions  Interaction[]
+  sentRequests  BrandRequest[] @relation("BrandRequests")
+  receivedRequests BrandRequest[] @relation("WalkerRequests")
+
+  @@map("users")
+}
+
+model Outfit {
+  id           String    @id @default(cuid())
+  walkerId     String    @map("walker_id")
+  title        String?
+  description  String?   @db.Text
+  imageUrl     String?   @map("image_url")
+  date         DateTime  @default(dbgenerated("(CURDATE())")) @db.Date
+  lat          Float?
+  lng          Float?
+  locationName String?   @map("location_name")
+  isActive     Boolean   @default(true) @map("is_active")
+  viewCount    Int       @default(0) @map("view_count")
+  buyCount     Int       @default(0) @map("buy_count")
+  isEvent      Boolean   @default(false) @map("is_event")
+  eventId      String?   @map("event_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  walker       User          @relation(fields: [walkerId], references: [id])
+  items        OutfitItem[]
+  interactions Interaction[]
+  event        Event?        @relation(fields: [eventId], references: [id])
+
+  @@map("outfits")
+}
+
+model OutfitItem {
+  id         String  @id @default(cuid())
+  outfitId   String  @map("outfit_id")
+  category   String? // top | bottom | shoes | bag | accessory
+  brandName  String? @map("brand_name")
+  itemName   String? @map("item_name")
+  price      Int?
+  buyUrl     String? @map("buy_url")
+  imageUrl   String? @map("image_url")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  outfit       Outfit        @relation(fields: [outfitId], references: [id])
+  interactions Interaction[]
+
+  @@map("outfit_items")
+}
+
+model Interaction {
+  id            String   @id @default(cuid())
+  outfitId      String   @map("outfit_id")
+  itemId        String?  @map("item_id")
+  searcherId    String   @map("searcher_id")
+  type          String   // view | click | purchase
+  pointsAwarded Int      @default(0) @map("points_awarded")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  outfit   Outfit      @relation(fields: [outfitId], references: [id])
+  item     OutfitItem? @relation(fields: [itemId], references: [id])
+  searcher User        @relation(fields: [searcherId], references: [id])
+
+  @@map("interactions")
+}
+
+model BrandRequest {
+  id          String    @id @default(cuid())
+  brandId     String    @map("brand_id")
+  walkerId    String    @map("walker_id")
+  title       String
+  description String?   @db.Text
+  fee         Int?
+  status      String    @default("pending") // pending | accepted | declined
+  deadline    DateTime? @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  brand  User @relation("BrandRequests", fields: [brandId], references: [id])
+  walker User @relation("WalkerRequests", fields: [walkerId], references: [id])
+
+  @@map("brand_requests")
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  venueName   String?   @map("venue_name")
+  lat         Float?
+  lng         Float?
+  radiusM     Int       @default(200) @map("radius_m")
+  startAt     DateTime? @map("start_at")
+  endAt       DateTime? @map("end_at")
+  qrCode      String?   @map("qr_code")
+  isActive    Boolean   @default(false) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  outfits Outfit[]
+
+  @@map("events")
+}

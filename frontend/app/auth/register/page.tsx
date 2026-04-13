@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import type { UserRole } from '@/store/authStore'
 
 const schema = z
@@ -16,11 +16,9 @@ const schema = z
       .min(3, '3文字以上で入力してください')
       .max(30, '30文字以内で入力してください')
       .regex(/^[a-zA-Z0-9_]+$/, '英数字とアンダースコアのみ使用できます'),
-    display_name: z.string().min(1, '表示名を入力してください').max(50),
+    displayName: z.string().min(1, '表示名を入力してください').max(50),
     email: z.string().email('有効なメールアドレスを入力してください'),
-    password: z
-      .string()
-      .min(8, '8文字以上で入力してください'),
+    password: z.string().min(8, '8文字以上で入力してください'),
     confirmPassword: z.string(),
     roles: z.array(z.enum(['walker', 'searcher', 'brand'])).min(1, '1つ以上選択してください'),
   })
@@ -62,39 +60,34 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: FormData) => {
     setServerError(null)
-    const supabase = createClient()
 
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: data.username,
+        displayName: data.displayName,
+        email: data.email,
+        password: data.password,
+        roles: data.roles,
+      }),
+    })
+
+    if (!res.ok) {
+      const json = await res.json()
+      setServerError(json.error ?? '登録に失敗しました')
+      return
+    }
+
+    const result = await signIn('credentials', {
       email: data.email,
       password: data.password,
+      redirect: false,
     })
-
-    if (signUpError) {
-      setServerError(signUpError.message)
+    if (result?.error) {
+      setServerError('登録は完了しましたが、ログインに失敗しました')
       return
     }
-
-    if (!authData.user) {
-      setServerError('登録に失敗しました。もう一度お試しください。')
-      return
-    }
-
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: authData.user.id,
-      username: data.username,
-      display_name: data.display_name,
-      roles: data.roles,
-    })
-
-    if (profileError) {
-      if (profileError.code === '23505') {
-        setServerError('そのユーザー名はすでに使用されています')
-      } else {
-        setServerError('プロフィールの作成に失敗しました')
-      }
-      return
-    }
-
     router.push('/map')
     router.refresh()
   }
@@ -108,7 +101,6 @@ export default function RegisterPage() {
         <p className="text-[#666666] text-center mb-8">新規登録</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* ロール選択 */}
           <div>
             <label className="block text-sm text-gray-300 mb-2">
               利用スタイルを選択（複数可）
@@ -153,13 +145,13 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm text-gray-300 mb-1">表示名</label>
             <input
-              {...register('display_name')}
+              {...register('displayName')}
               type="text"
               className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-[#E8315B] transition-colors"
               placeholder="山田 太郎"
             />
-            {errors.display_name && (
-              <p className="text-[#E8315B] text-xs mt-1">{errors.display_name.message}</p>
+            {errors.displayName && (
+              <p className="text-[#E8315B] text-xs mt-1">{errors.displayName.message}</p>
             )}
           </div>
 

@@ -1,46 +1,30 @@
 'use client'
 
+import { SessionProvider, useSession } from 'next-auth/react'
 import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/store/authStore'
-import { Profile } from '@/store/authStore'
+import type { SessionUser } from '@/store/authStore'
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setUser, setProfile, setLoading, reset } = useAuthStore()
+function SessionSync() {
+  const { data: session } = useSession()
+  const setUser = useAuthStore((s) => s.setUser)
 
   useEffect(() => {
-    const supabase = createClient()
-
-    const fetchProfile = async (userId: string) => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      if (data) setProfile(data as Profile)
+    if (session?.user) {
+      setUser(session.user as SessionUser)
+    } else {
+      setUser(null)
     }
+  }, [session, setUser])
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUser(user)
-        fetchProfile(user.id)
-      }
-      setLoading(false)
-    })
+  return null
+}
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          setUser(session.user)
-          fetchProfile(session.user.id)
-        } else {
-          reset()
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [setUser, setProfile, setLoading, reset])
-
-  return <>{children}</>
+export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider>
+      <SessionSync />
+      {children}
+    </SessionProvider>
+  )
 }

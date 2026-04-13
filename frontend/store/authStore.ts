@@ -1,35 +1,27 @@
 import { create } from 'zustand'
-import { User } from '@supabase/supabase-js'
 
 export type UserRole = 'walker' | 'searcher' | 'brand'
 
-export interface Profile {
+export interface SessionUser {
   id: string
+  email: string
+  name: string | null
   username: string
-  display_name: string | null
-  avatar_url: string | null
-  roles: UserRole[]
-  bio: string | null
-  points: number
-  total_earned: number
+  roles: string // カンマ区切り
 }
 
 interface AuthState {
-  user: User | null
-  profile: Profile | null
-  isLoading: boolean
-  setUser: (user: User | null) => void
-  setProfile: (profile: Profile | null) => void
-  setLoading: (loading: boolean) => void
-  reset: () => void
+  user: SessionUser | null
+  setUser: (user: SessionUser | null) => void
+  hasRole: (role: UserRole) => boolean
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  profile: null,
-  isLoading: true,
   setUser: (user) => set({ user }),
-  setProfile: (profile) => set({ profile }),
-  setLoading: (isLoading) => set({ isLoading }),
-  reset: () => set({ user: null, profile: null, isLoading: false }),
+  hasRole: (role) => {
+    const { user } = get()
+    if (!user) return false
+    return user.roles.split(',').includes(role)
+  },
 }))

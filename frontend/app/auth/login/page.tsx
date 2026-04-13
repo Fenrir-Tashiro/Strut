@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 const schema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -27,12 +27,12 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setServerError(null)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({
+    const result = await signIn('credentials', {
       email: data.email,
       password: data.password,
+      redirect: false,
     })
-    if (error) {
+    if (result?.error) {
       setServerError('メールアドレスまたはパスワードが正しくありません')
       return
     }
@@ -66,9 +66,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              パスワード
-            </label>
+            <label className="block text-sm text-gray-300 mb-1">パスワード</label>
             <input
               {...register('password')}
               type="password"
