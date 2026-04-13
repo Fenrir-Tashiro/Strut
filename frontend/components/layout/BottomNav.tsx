@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore'
 
 const navItems = [
   { href: '/map', label: 'マップ', icon: '🗺️' },
+  { href: '/search', label: '検索', icon: '🔍' },
   { href: '/walker/register', label: '投稿', icon: '➕', role: 'walker' as const },
   { href: '/walker/dashboard', label: '収益', icon: '💰', role: 'walker' as const },
   { href: '/requests', label: '依頼', icon: '📩', role: 'walker' as const },
