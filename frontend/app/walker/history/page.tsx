@@ -40,12 +40,12 @@ export default async function WalkerHistoryPage() {
             </Link>
           </div>
         ) : (
-          outfits.map((outfit) => (
-            <Link
-              key={outfit.id}
-              href={`/outfit/${outfit.id}`}
-              className="block bg-white rounded-2xl shadow-sm overflow-hidden"
-            >
+          outfits.map((outfit) => {
+            const isToday =
+              new Date(outfit.createdAt).toDateString() === new Date().toDateString()
+            return (
+            <div key={outfit.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <Link href={`/outfit/${outfit.id}`} className="block">
               <div className="flex gap-3 p-3">
                 {outfit.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -80,8 +80,20 @@ export default async function WalkerHistoryPage() {
                   </span>
                 </div>
               </div>
-            </Link>
-          ))
+              </Link>
+              {isToday && (
+                <div className="px-3 pb-3">
+                  <Link
+                    href={`/walker/edit/${outfit.id}`}
+                    className="block w-full text-center text-sm border border-[#E8315B] text-[#E8315B] rounded-xl py-2 hover:bg-[#E8315B] hover:text-white transition-colors"
+                  >
+                    編集する
+                  </Link>
+                </div>
+              )}
+            </div>
+            )
+          })
         )}
       </main>
 
