@@ -9,6 +9,8 @@ const navItems = [
   { href: '/walker/register', label: '投稿', icon: '➕', role: 'walker' as const },
   { href: '/walker/dashboard', label: '収益', icon: '💰', role: 'walker' as const },
   { href: '/requests', label: '依頼', icon: '📩', role: 'walker' as const },
+  { href: '/brand/dashboard', label: 'BRAND', icon: '🏷️', role: 'brand' as const },
+  { href: '/events', label: 'イベント', icon: '🎪' },
   { href: '/settings', label: '設定', icon: '⚙️' },
 ]
 
